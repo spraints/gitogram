@@ -42,22 +42,27 @@ func main() {
     os.Exit(4)
   }
 
-  walk.Iterate(walkCommit)
+  walk.Iterate(func (commit *git.Commit) bool { return walkCommit(repo, commit) })
 }
 
-func walkCommit(commit *git.Commit) bool {
+func walkCommit(repo *git.Repository, commit *git.Commit) bool {
   var tree, err = commit.Tree()
   if err != nil {
     fmt.Println(err)
     return false
   }
-  tree.Walk(walkTree)
+  tree.Walk(func (dir string, entry *git.TreeEntry) int { return walkTree(repo, dir, entry) })
   return true
 }
 
-func walkTree(dir string, entry *git.TreeEntry) int {
+func walkTree(repo *git.Repository, dir string, entry *git.TreeEntry) int {
   if entry.Type == git.OBJ_BLOB {
-    fmt.Printf("> %d %s%s\n", entry.Type, dir, entry.Name)
+    var obj, err = repo.LookupBlob(entry.Id)
+    if err != nil {
+      fmt.Println(err)
+    } else {
+      fmt.Printf("> %d %s%s\n", obj.Size(), dir, entry.Name)
+    }
   }
   return 0
 }
