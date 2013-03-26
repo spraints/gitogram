@@ -46,5 +46,18 @@ func main() {
 }
 
 func walkCommit(commit *git.Commit) bool {
+  var tree, err = commit.Tree()
+  if err != nil {
+    fmt.Println(err)
+    return false
+  }
+  tree.Walk(walkTree)
   return true
+}
+
+func walkTree(dir string, entry *git.TreeEntry) int {
+  if entry.Type == git.OBJ_BLOB {
+    fmt.Printf("> %d %s%s\n", entry.Type, dir, entry.Name)
+  }
+  return 0
 }
