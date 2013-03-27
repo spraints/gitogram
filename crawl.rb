@@ -10,17 +10,52 @@ def main
     f << 'var VALUES = ['
     comma = ','
     sep = ''
-    max = 0
+    biggest = Bigness.new
     repo.each_id do |oid|
       size = repo.read(oid).len
-      max = size if size > max
+      biggest.add(oid, size)
       f << sep
       f << size
       sep = comma
     end
     f.puts '];'
-    f.puts "var MAX = #{max};"
+    f.puts "var MAX = #{biggest.max_size};"
+    f.puts "var BIGS = [ #{biggest.map { |x| "{ oid: \"#{x.oid}\", size: #{x.size} }" }.join(', ')} ];"
   end
+end
+
+class Bigness
+  include Enumerable
+
+  Count = 5
+
+  def add(oid, size)
+    if values.size < Count
+      values << Info.new(oid, size)
+    elsif i = values.index { |x| x.size < size }
+      values[i] = Info.new(oid, size)
+    end
+  end
+
+  def max_size
+    values.map { |x| x.size }.inject { |a, b| a > b ? a : b }
+  end
+
+  def each(&block)
+    values.sort_by { |x| x.size }.reverse.each(&block)
+  end
+
+  def values
+    @values ||= []
+  end
+end
+
+class Info
+  def initialize(oid, size)
+    @oid  = oid
+    @size = size
+  end
+  attr_reader :oid, :size
 end
 
 

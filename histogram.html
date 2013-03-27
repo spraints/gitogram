@@ -78,11 +78,20 @@
           .attr("transform", "translate(0," + height + ")")
           .call(xAxis);
 
-      document.writeln(unescape('%3Ctable>'));
-      for (var i = 0; i < data.length; i++) {
-        document.writeln(unescape('%3Ctr>%3Ctd>' + data[i].x + '%3C/td>%3Ctd>' + data[i].y + '%3C/td>%3C/tr>'));
-      }
-      document.writeln(unescape('%3C/table>'));
+      var makeTable = function(data, x) {
+        document.writeln(unescape('%3Ctable>'));
+        for (var i = 0; i < data.length; i++) {
+          document.writeln(unescape('%3Ctr>'));
+          var row = x(data[i]);
+          for (var j = 0; j < row.length; j++) {
+            document.writeln(unescape('%3Ctd>' + row[j] + '%3C/td>'));
+          }
+          document.writeln(unescape('%3C/tr>'));
+        }
+        document.writeln(unescape('%3C/table>'));
+      };
+      makeTable(data, function(d) { return [d.x, d.y]; });
+      makeTable(BIGS, function(d) { return [d.oid, d.size]; });
     </script>
   </body>
 </html>
