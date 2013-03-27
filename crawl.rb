@@ -6,8 +6,9 @@ def main
   path = ARGV.first || '.'
   repo = Rugged::Repository.new(path)
   File.open 'values.js', 'w' do |f|
-    f.puts "var PATH = #{path.inspect};"
-    f << 'var VALUES = ['
+    f.puts 'window.gitData = {'
+    f.puts "  path: #{path.inspect},"
+    f << ' sizes: ['
     comma = ','
     sep = ''
     biggest = Bigness.new
@@ -18,9 +19,11 @@ def main
       f << size
       sep = comma
     end
-    f.puts '];'
-    f.puts "var MAX = #{biggest.max_size};"
-    f.puts "var BIGS = [ #{biggest.map { |x| "{ oid: \"#{x.oid}\", size: #{x.size} }" }.join(', ')} ];"
+    f.puts '],'
+    f.puts "  max: #{biggest.max_size},"
+    biggest.find_in(repo)
+    f.puts "  top: [ #{biggest.map { |x| "{ oid: \"#{x.oid}\", size: #{x.size}, path: \"#{x.path}\" }" }.join(', ')} ]"
+    f.puts '};'
   end
 end
 
@@ -52,6 +55,20 @@ class Bigness
   def values
     @values ||= []
   end
+
+  def find_in(repo)
+    objs = values.each_with_object({}) { |obj, res| res[obj.oid] = obj }
+    walker = Rugged::Walker.new(repo)
+    ([repo.head] + repo.refs).each { |ref| walker.push(ref.target) rescue nil }
+    walker.each do |commit|
+      commit.tree.walk(:preorder) do |root, entry|
+        if obj = objs.delete(entry[:oid])
+          obj.path = root + entry[:name]
+        end
+      end
+      break if objs.empty?
+    end
+  end
 end
 
 class Info
@@ -60,6 +77,7 @@ class Info
     @size = size
   end
   attr_reader :oid, :size
+  attr_accessor :path
 end
 
 

@@ -25,7 +25,7 @@
   </head>
   <body>
     <script src="values.js"></script>
-    <h1><script>document.writeln(PATH)</script></h1>
+    <h1><script>document.writeln(gitData.path)</script></h1>
     <script src="d3/d3.min.js"></script>
     <script>
       var margin = {top: 10, right: 30, bottom: 30, left: 30},
@@ -33,13 +33,13 @@
           height = 500 - margin.top - margin.bottom;
 
       var x = d3.scale.linear()
-          .domain([0, MAX])
+          .domain([0, gitData.max])
           .range([0, width]);
 
       // Generate a histogram using twenty uniformly-spaced bins.
       var data = d3.layout.histogram()
           .bins(x.ticks(20))
-          (VALUES);
+          (gitData.sizes);
 
       var y = d3.scale.linear()
           .domain([0, d3.max(data, function(d) { return d.y; })])
@@ -91,7 +91,7 @@
         document.writeln(unescape('%3C/table>'));
       };
       makeTable(data, function(d) { return [d.x, d.y]; });
-      makeTable(BIGS, function(d) { return [d.oid, d.size]; });
+      makeTable(gitData.top, function(d) { return [d.oid, d.size, d.path]; });
     </script>
   </body>
 </html>
