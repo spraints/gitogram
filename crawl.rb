@@ -27,14 +27,18 @@ end
 class Bigness
   include Enumerable
 
-  Count = 5
+  Count = 50
 
   def add(oid, size)
     if values.size < Count
       values << Info.new(oid, size)
-    elsif i = values.index { |x| x.size < size }
-      values[i] = Info.new(oid, size)
+    elsif values.first.size < size
+      values.shift
+      values << Info.new(oid, size)
+    else
+      return
     end
+    values.sort_by! { |x| x.size }
   end
 
   def max_size
@@ -42,7 +46,7 @@ class Bigness
   end
 
   def each(&block)
-    values.sort_by { |x| x.size }.reverse.each(&block)
+    values.reverse.each(&block)
   end
 
   def values
