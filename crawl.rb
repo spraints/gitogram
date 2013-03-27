@@ -5,8 +5,21 @@ def main
 
   path = ARGV.first || '.'
   repo = Rugged::Repository.new(path)
-  repo.each_id do |oid|
-    puts repo.read(oid).len
+  File.open 'values.js', 'w' do |f|
+    f.puts "var PATH = #{path.inspect};"
+    f << 'var VALUES = ['
+    comma = ','
+    sep = ''
+    max = 0
+    repo.each_id do |oid|
+      size = repo.read(oid).len
+      max = size if size > max
+      f << sep
+      f << size
+      sep = comma
+    end
+    f.puts '];'
+    f.puts "var MAX = #{max};"
   end
 end
 
