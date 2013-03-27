@@ -16,17 +16,17 @@ int
 each_entry(const char *root, const git_tree_entry *entry, void *payload)
 {
   int error;
-  git_repository *repository = payload;
-  git_blob *blob;
+  git_odb *odb = payload;
+  git_odb_object *object;
 
   if(GIT_OBJ_BLOB == git_tree_entry_type(entry))
   {
-    error = git_blob_lookup(&blob, repository, git_tree_entry_id(entry));
+    error = git_odb_read(&object, odb, git_tree_entry_id(entry));
     check_error(error, "lookup blob");
 
-    printf("> %lld %s%s\n", git_blob_rawsize(blob), root, git_tree_entry_name(entry));
+    printf("> %zd %s%s\n", git_odb_object_size(object), root, git_tree_entry_name(entry));
 
-    git_blob_free(blob);
+    git_odb_object_free(object);
   }
 
   return 0;
@@ -42,6 +42,7 @@ main(int argc, char **argv)
   git_oid commit_oid;
   git_commit *commit;
   git_tree *tree;
+  git_odb *odb;
 
   error = git_repository_open(&repo, repo_path);
   check_error(error, "open repository");
@@ -52,6 +53,9 @@ main(int argc, char **argv)
   error = git_revwalk_push_head(walk);
   check_error(error, "walk HEAD");
 
+  error = git_repository_odb(&odb, repo);
+  check_error(error, "open ODB");
+
   while(0 == git_revwalk_next(&commit_oid, walk)) {
     error = git_commit_lookup(&commit, repo, &commit_oid);
     check_error(error, "lookup commit");
@@ -59,11 +63,12 @@ main(int argc, char **argv)
     error = git_commit_tree(&tree, commit);
     check_error(error, "get tree");
 
-    error = git_tree_walk(tree, GIT_TREEWALK_PRE, each_entry, repo);
+    error = git_tree_walk(tree, GIT_TREEWALK_PRE, each_entry, odb);
     check_error(error, "walk tree");
 
     git_tree_free(tree);
   }
 
   git_revwalk_free(walk);
+  git_odb_free(odb);
 }
