@@ -59,14 +59,17 @@ class Bigness
   def find_in(repo)
     objs = values.each_with_object({}) { |obj, res| res[obj.oid] = obj }
     walker = Rugged::Walker.new(repo)
-    ([repo.head] + repo.refs).each { |ref| walker.push(ref.target) rescue nil }
+    walker.push(repo.head.target)
+    n = 0
+    start = Time.now
     walker.each do |commit|
+      n += 1
       commit.tree.walk(:preorder) do |root, entry|
         if obj = objs.delete(entry[:oid])
           obj.path = root + entry[:name]
         end
       end
-      break if objs.empty?
+      break if objs.empty? || (n > 100 && (Time.now - start) > 30)
     end
   end
 end
