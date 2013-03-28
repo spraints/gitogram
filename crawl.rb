@@ -5,13 +5,14 @@ def main
 
   path = ARGV.first || '.'
   repo = Rugged::Repository.new(path)
+  biggest = Bigness.new
+
   File.open 'values.js', 'w' do |f|
     f.puts 'window.gitData = {'
     f.puts "  path: #{path.inspect},"
     f << ' sizes: ['
     comma = ','
     sep = ''
-    biggest = Bigness.new
     repo.each_id do |oid|
       size = repo.read(oid).len
       biggest.add(oid, size)
@@ -21,9 +22,20 @@ def main
     end
     f.puts '],'
     f.puts "  max: #{biggest.max_size},"
-    biggest.find_in(repo)
-    f.puts "  top: [ #{biggest.map { |x| "{ oid: \"#{x.oid}\", size: #{x.size}, path: \"#{x.path}\" }" }.join(', ')} ]"
     f.puts '};'
+  end
+  write_biggest(biggest)
+  puts "histogram is ready"
+
+  biggest.find_in(repo) do
+    write_biggest(biggest)
+    puts "...  found another large object"
+  end
+end
+
+def write_biggest(biggest)
+  File.open 'values.top.js', 'w' do |f|
+    f.puts "window.gitData.top = [ #{biggest.map { |x| "{ oid: \"#{x.oid}\", size: #{x.size}, path: \"#{x.path}\" }" }.join(', ')} ]"
   end
 end
 
@@ -67,9 +79,13 @@ class Bigness
       commit.tree.walk(:preorder) do |root, entry|
         if obj = objs.delete(entry[:oid])
           obj.path = root + entry[:name]
+          yield
         end
       end
-      break if objs.empty? || (n > 100 && (Time.now - start) > 30)
+      if objs.empty? || (n > 100 && (Time.now - start) > 30)
+        yield
+        break
+      end
     end
   end
 end
