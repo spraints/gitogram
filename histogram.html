@@ -33,18 +33,12 @@
           width = 960 - margin.left - margin.right,
           height = 500 - margin.top - margin.bottom;
 
-      var x = d3.scale.linear()
-          .domain([0, gitData.max])
+      var x = d3.scale.log()
+          .domain([1, gitData.max])
           .range([0, width]);
 
-      var bins = [0, 10];
-      for(var i = 100; i < gitData.max; i = i * 10)
-      {
-        bins.push(i);
-      }
-
       var data = d3.layout.histogram()
-          .bins(bins)
+          .bins(x.ticks(10))
           (gitData.sizes);
 
       var y = d3.scale.linear()
