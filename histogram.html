@@ -37,9 +37,14 @@
           .domain([0, gitData.max])
           .range([0, width]);
 
-      // Generate a histogram using twenty uniformly-spaced bins.
+      var bins = [0, 10];
+      for(var i = 100; i < gitData.max; i = i * 10)
+      {
+        bins.push(i);
+      }
+
       var data = d3.layout.histogram()
-          .bins(x.ticks(20))
+          .bins(bins)
           (gitData.sizes);
 
       var y = d3.scale.linear()
@@ -64,7 +69,7 @@
 
       bar.append("rect")
           .attr("x", 1)
-          .attr("width", x(data[0].dx) - 1)
+          .attr("width", function(d) { return Math.max(Math.floor(x(d.dx) - 1), 2); })
           .attr("height", function(d) { return height - y(d.y); });
 
       bar.append("text")
